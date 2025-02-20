@@ -1,0 +1,69 @@
+from tkinter import *
+    
+SIZE = int(input('Dessa val kommer att ändra ritningens kvickhet... \n -Fönstrets storlek : '))
+RADIUS=int(input(' -Klotets radie (rek. <= ' + str(SIZE / 2) + '): '))
+RESOLUTION= int(input('- Skärmupplösning >= 1 (rek. < ' +str(RADIUS) +') : '))
+class DrawSphere:
+    def __init__(self, x0, y0, z0):
+        '''Enters the coordinates of where the light comes in. It is the only variables the object uses from outside '''
+        self.x0 = x0
+        self.y0 = y0
+        self.z0 = z0
+
+    def draw(self, img):
+        '''For each pixel in the window, with size Resolution. We try to calculate b. 
+        Then whith the value of b we put different colours thanks to interpolate colour.'''
+        for x in range(-int(SIZE/2), (int(SIZE/2)+1), RESOLUTION):
+            for y in range(-int(SIZE/2), (int(SIZE/2)+1), RESOLUTION):
+                try:
+                    if x ** 2 + y ** 2 + (RADIUS ** 2 - x ** 2 - y ** 2) <= RADIUS ** 2:
+                        b = (x * self.x0 + y * self.y0 + ((abs(RADIUS ** 2 - x ** 2 - y ** 2)) ** (1 / 2)) * self.z0) / (RADIUS ** 2)
+                        if b <= 0:
+                            color = "#000000"
+                        elif 0 < b <= 1:
+                            color = interpolate_color(b , (0, 0, 0), (255, 255, 255))
+                        else:
+                            color = "#ffffff"
+                        img.put(color, to=(int(x + SIZE/2 - RESOLUTION/2), int(y + SIZE/2 - RESOLUTION/2), int(x + SIZE/2 + RESOLUTION/2), int(y + SIZE/2 + RESOLUTION/2)))
+                except: b=0
+def interpolate_color(val, start_color, end_color):
+        '''Inputs our value of b (val), the colour black and the color white. Makes a linear function for r, g and b. 
+        (val) will choose where we are in the function and thus the colour. the last line turns it into a hexadecimal string for tk.'''
+        r = start_color[0] + (end_color[0] - start_color[0]) * val
+        g = start_color[1] + (end_color[1] - start_color[1]) * val
+        b = start_color[2] + (end_color[2] - start_color[2]) * val
+        return f'#{int(r):02x}{int(g):02x}{int(b):02x}'
+
+def click_change(event, shading, img):
+    '''We change x0 and y0 in the class to the values entered. If z0^2 > 0 we draw the new sphere, otherwise nothing happens.'''
+    shading.x0 = event.x - SIZE / 2
+    shading.y0 = event.y  - SIZE / 2
+    if RADIUS ** 2 - shading.x0 ** 2 - shading.y0 ** 2 >=0:
+        shading.z0 = calculate_z0(shading.x0, shading.y0)
+        shading.draw(img)
+    else:
+        return
+
+def calculate_z0(x0, y0):
+    '''Calculates z0'''
+    return (RADIUS ** 2 - x0 ** 2 - y0 ** 2) ** (1 / 2)
+
+def main():
+    '''Initialises x0, y0, z0. Creates the window and canvas with the event if we press canvas. Initialises the drawing.'''
+    x0=0    
+    y0=0
+    z0 = calculate_z0(x0, y0)
+    window = Tk()
+    window.title('Belysning av klot - P Uppgift')
+    canvas = Canvas(window, width=SIZE, height=SIZE, bg="#000000")
+    canvas.pack()
+    img = PhotoImage(width=SIZE, height=SIZE)
+    canvas.create_image((SIZE / 2, SIZE / 2), image=img, state="normal")
+    canvas.bind("<Button-1>",lambda event: click_change(event, shading, img))
+
+    shading = DrawSphere(x0, y0, z0)
+    shading.draw(img)
+    mainloop()
+
+if __name__ == '__main__':
+    main()
